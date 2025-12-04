@@ -6,6 +6,9 @@ export default function PlaylistScreen() {
 
     return (
         <View>
+            <Text>Your Playlist</Text>
+
+            {/* NAV */}
             <Text>🎵</Text>
             <Button title="Playlist" onPress={() => nav.navigate('Playlist')} />
             <Text>🏠</Text>

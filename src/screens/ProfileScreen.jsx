@@ -6,6 +6,8 @@ export default function ProfileScreen() {
 
     return (
         <View>
+
+            {/* NAV */}
             <Text>🎵</Text>
             <Button title="Playlist" onPress={() => nav.navigate('Playlist')} />
             <Text>🏠</Text>
