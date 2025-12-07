@@ -1,95 +1,152 @@
 import React, { useEffect, useState } from "react";
-import { Button, View, Text } from 'react-native';
+import {
+    View,
+    Text,
+    Platform,
+    PermissionsAndroid,
+    StyleSheet,
+    Button,
+} from "react-native";
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import Geolocation from "react-native-geolocation-service";
+import AppButton from "../components/appButton.jsx";
 
 export default function HomeScreen() {
     const nav = useNavigation();
 
-    const lat = 50.9269393;
-    const lon = -114.0239669;
     const key = "cd074d1d61f925210d6b697e73298d83";
 
     const [weather, setWeather] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadWeather();
-    }, []);
+    async function getGPSPermission() {
+        try {
+            if (Platform.OS === "android") {
+                const granted = await PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                    {
+                        title: "Location Permission",
+                        message: "This app needs your location for local weather",
+                        buttonPositive: "OK",
+                    }
+                );
+
+                return granted === PermissionsAndroid.RESULTS.GRANTED;
+            }
+            return true;
+        } catch (err) {
+            console.log("Permission error:", err);
+            return false;
+        }
+    }
+
+    async function getLocation() {
+        const hasPermission = await getGPSPermission();
+        if (!hasPermission) {
+            console.log("GPS permission denied.");
+            return null;
+        }
+
+        return new Promise((resolve, reject) => {
+            Geolocation.getCurrentPosition(
+                (pos) => {
+                    const coords = {
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                    };
+                    console.log("GPS location:", coords);
+                    resolve(coords);
+                },
+                (err) => {
+                    console.log("GPS error:", err);
+                    reject(err);
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+            );
+        });
+    }
 
     function getTodayISO() {
         return new Date().toISOString().slice(0, 10);
     }
 
+    const cacheKeyFor = (lat, lon, date) =>
+        `weather_${date}_${lat.toFixed(3)}_${lon.toFixed(3)}`;
+
+
+    useEffect(() => {
+        loadWeather();
+    }, []);
+
+
     async function loadWeather() {
         try {
+            setLoading(true);
+
             const today = getTodayISO();
-            const saved = await AsyncStorage.getItem("weatherData");
+
+            const loc = await getLocation();
+            if (!loc) {
+                console.log("No GPS available.");
+                setLoading(false);
+                return;
+            }
+
+            const { lat, lon } = loc;
+
+            const cacheKey = cacheKeyFor(lat, lon, today);
+            const saved = await AsyncStorage.getItem(cacheKey);
+
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (parsed.date === today && parsed.data) {
+                if (parsed.date === today) {
+                    console.log("Loaded from cache:", parsed.data);
                     setWeather(parsed.data);
                     setLoading(false);
                     return;
                 }
             }
-            // otherwise fetch fresh data
-            await fetchWeather(today);
+
+            await fetchWeather({ lat, lon, today });
         } catch (err) {
             console.log("loadWeather error:", err);
             setLoading(false);
         }
     }
 
-    async function fetchWeather(today) {
+
+
+    async function fetchWeather({ lat, lon, today }) {
         setLoading(true);
 
-        const oneCallUrl =
-            `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,alerts&units=metric&appid=${key}`;
-        const fallbackUrl =
-            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${key}`;
+        const cacheKey = cacheKeyFor(lat, lon, today);
 
         try {
-            let res = await fetch(oneCallUrl);
+            console.log("Fetching weather for:", lat, lon);
 
-            if (!res.ok) {
-                console.log("One Call failed:", res.status);
-                res = await fetch(fallbackUrl);
-            }
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${key}`;
 
+            const res = await fetch(url);
             if (!res.ok) {
-                console.log("Weather fetch failed:", res.status);
-                setLoading(false);
+                console.log("Weather API error:", res.status);
                 return;
             }
 
             const json = await res.json();
-            let data = null;
 
-            if (json.current && json.current.weather) {
-                data = {
-                    temp: json.current.temp,
-                    feels_like: json.current.feels_like,
-                    main: json.current.weather[0].main,
-                    description: json.current.weather[0].description,
-                };
-            } else if (json.main && json.weather) {
-                data = {
-                    temp: json.main.temp,
-                    feels_like: json.main.feels_like,
-                    main: json.weather[0].main,
-                    description: json.weather[0].description,
-                };
-            } else {
-                console.log("Unexpected weather response:", json);
-                setLoading(false);
-                return;
-            }
+            const data = {
+                temp: json.main?.temp ?? null,
+                feels_like: json.main?.feels_like ?? null,
+                main: json.weather?.[0]?.main ?? null,
+            };
 
-            // Save to storage with today's date
             await AsyncStorage.setItem(
-                "weatherData",
-                JSON.stringify({ date: today, data })
+                cacheKey,
+                JSON.stringify({
+                    date: today,
+                    data,
+                })
             );
 
             setWeather(data);
@@ -115,37 +172,83 @@ export default function HomeScreen() {
     }
 
     return (
-        <View>
-
+        <View style={styles.container}>
             {/* WEATHER */}
             {loading ? (
-                <Text>Loading weather...</Text>
+                <Text style={styles.weatherText}>Loading weather...</Text>
             ) : weather ? (
                 <>
-                    <Text>{Math.round(weather.temp)}°C</Text>
-                    <Text>
+                    <Text style={styles.temp}>{Math.round(weather.temp)}°C</Text>
+                    <Text style={styles.weatherText}>
                         {weather.main} {weatherEmoji(weather.main)}
                     </Text>
-                    <Text>{weather.description}</Text>
                 </>
             ) : (
-                <Text>Weather unavailable</Text>
+                <Text style={styles.weatherText}>Weather unavailable</Text>
             )}
-            {/* MOOD BUTTONS */}
-            <Button title="😊 Happy" style={"moodBtn"} />
-            <Button title="😌 Calm" style={"moodBtn"} />
-            <Button title="⚡ Energetic" style={"moodBtn"} />
-            <Button title="🌧️ Melancholy" style={"moodBtn"} />
-            <Button title="💘 Romantic" style={"moodBtn"} />
-            <Button title="Generat Playlist" onPress={() => nav.navigate('Playlist')} />
 
-            {/* NAV */}
-            <Text>🎵</Text>
-            <Button title="Playlist" onPress={() => nav.navigate('Playlist')} />
-            <Text>🏠</Text>
-            <Button title="Home" onPress={() => nav.navigate('Home')} />
-            <Text>⚙️</Text>
-            <Button title="Profile" onPress={() => nav.navigate('Profile')} />
+            {/* MOOD BUTTONS */}
+            <AppButton title="😊 Happy" />
+            <AppButton title="😌 Calm" />
+            <AppButton title="⚡ Energetic" />
+            <AppButton title="🌧️ Melancholy" />
+            <AppButton title="💘 Romantic" />
+
+            <AppButton
+                title="🎶 Generate Playlist"
+                onPress={() => nav.navigate("Playlist")}
+                style={styles.generateBtn}
+            />
+
+            {/* Nav */}
+            <View style={styles.navRow}>
+                <AppButton
+                    title="🎵 Playlist"
+                    style={styles.navBtn}
+                    onPress={() => nav.navigate("Playlist")}
+                />
+                <AppButton
+                    title="🏠 Home"
+                    style={styles.navBtn}
+                    onPress={() => nav.navigate("Home")}
+                />
+                <AppButton
+                    title="⚙️ Profile"
+                    style={styles.navBtn}
+                    onPress={() => nav.navigate("Profile")}
+                />
+            </View>
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        padding: 20,
+    },
+    temp: {
+        fontSize: 42,
+        fontWeight: "bold",
+        marginBottom: 5,
+    },
+    weatherText: {
+        fontSize: 20,
+    },
+    weatherDescription: {
+        fontSize: 16,
+        marginBottom: 20,
+        opacity: 0.7,
+    },
+    generateBtn: {
+        backgroundColor: "#8A2BE2",
+        marginTop: 10,
+    },
+    navRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginTop: 40,
+    },
+    navBtn: {
+        paddingVertical: 20,
+    },
+});
