@@ -18,6 +18,16 @@ export default function HomeScreen() {
 
     const [weather, setWeather] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [selectedMood, setSelectedMood] = useState(null);
+
+    // Mood options with values
+    const moodOptions = [
+        { id: "happy", label: "😊 Happy" },
+        { id: "calm", label: "😌 Calm" },
+        { id: "energetic", label: "⚡ Energetic" },
+        { id: "melancholy", label: "🌧️ Melancholy" },
+        { id: "romantic", label: "💘 Romantic" },
+    ];
 
     async function getGPSPermission() {
         try {
@@ -186,16 +196,36 @@ export default function HomeScreen() {
                 <Text style={styles.weatherText}>Weather unavailable</Text>
             )}
 
-            {/* MOOD BUTTONS */}
-            <AppButton title="😊 Happy" />
-            <AppButton title="😌 Calm" />
-            <AppButton title="⚡ Energetic" />
-            <AppButton title="🌧️ Melancholy" />
-            <AppButton title="💘 Romantic" />
+            {/* MOOD SELECTION */}
+            <Text style={styles.moodLabel}>Select Your Mood:</Text>
+            <View style={styles.moodContainer}>
+                {moodOptions.map((mood) => (
+                    <AppButton
+                        key={mood.id}
+                        title={mood.label}
+                        style={[
+                            styles.moodButton,
+                            selectedMood === mood.id && styles.selectedMoodButton
+                        ]}
+                        onPress={() => setSelectedMood(mood.id)}
+                    />
+                ))}
+            </View>
+
+            {/* Display selected mood */}
+            {selectedMood && (
+                <Text style={styles.selectedMoodText}>
+                    Selected Mood: {moodOptions.find(m => m.id === selectedMood)?.label}
+                </Text>
+            )}
 
             <AppButton
                 title="🎶 Generate Playlist"
-                onPress={() => nav.navigate("Playlist")}
+                onPress={() => nav.navigate("Playlist", { 
+                    weatherCondition: weather?.main,
+                    temperature: weather?.temp,
+                    mood: selectedMood || "auto"
+                })}
                 style={styles.generateBtn}
             />
 
@@ -224,19 +254,45 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         padding: 20,
+        flex: 1,
     },
     temp: {
         fontSize: 42,
         fontWeight: "bold",
         marginBottom: 5,
+        textAlign: "center",
     },
     weatherText: {
         fontSize: 20,
+        textAlign: "center",
+        marginBottom: 30,
     },
-    weatherDescription: {
+    moodLabel: {
+        fontSize: 18,
+        fontWeight: "bold",
+        marginTop: 20,
+        marginBottom: 10,
+    },
+    moodContainer: {
+        flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "space-between",
+        marginBottom: 15,
+    },
+    moodButton: {
+        backgroundColor: "#f0f0f0",
+        marginBottom: 10,
+        width: "48%",
+    },
+    selectedMoodButton: {
+        backgroundColor: "#8A2BE2",
+    },
+    selectedMoodText: {
         fontSize: 16,
-        marginBottom: 20,
-        opacity: 0.7,
+        textAlign: "center",
+        marginBottom: 15,
+        color: "#8A2BE2",
+        fontWeight: "bold",
     },
     generateBtn: {
         backgroundColor: "#8A2BE2",
