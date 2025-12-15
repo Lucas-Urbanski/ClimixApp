@@ -1,19 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     View,
     Text,
     TextInput,
     StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
+    ActivityIndicator,
     TouchableWithoutFeedback,
     Keyboard,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import AppButton from "../components/appButton.jsx";
 import SHA256 from "crypto-js/sha256";
 import encHex from "crypto-js/enc-hex";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import AppButton from "../components/appButton.jsx";
 import createDayNightStyles from "../assets/styles/dayNightStyles.js";
 import useDayNight from "../components/useDayNight.jsx";
 
@@ -22,32 +21,22 @@ function hashPassword(password) {
     return SHA256(password).toString(encHex);
 }
 
-export default function LoginScreen() {
+export default function SigninScreen() {
     const nav = useNavigation();
+
     const { isDaytime } = useDayNight();
     const shared = createDayNightStyles(isDaytime);
 
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
-    const [confirm, setConfirm] = useState("");
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    async function createAccount() {
+    async function signIn() {
         setError("");
 
-        if (!username.trim()) {
-            setError("Please enter a user name.");
-            return;
-        }
-
-        if (password.length < 6) {
-            setError("Password must be at least 6 characters.");
-            return;
-        }
-
-        if (password !== confirm) {
-            setError("Password and confirm password do not match.");
+        if (!username.trim() || !password) {
+            setError("Please enter both username and password.");
             return;
         }
 
@@ -57,28 +46,32 @@ export default function LoginScreen() {
             const raw = await AsyncStorage.getItem("users");
             const users = raw ? JSON.parse(raw) : {};
 
-            if (users[username]) {
-                setError("That username already exists.");
+            const user = users[username];
+            if (!user) {
+                setError("Invalid username or password.");
                 setLoading(false);
                 return;
             }
 
-            const hashed = hashPassword(password);
+            const hashedInput = hashPassword(password);
 
-            users[username] = {
-                hash: hashed,
-                createdAt: new Date().toISOString(),
-            };
+            if (hashedInput !== user.hash) {
+                setError("Invalid username or password.");
+                setLoading(false);
+                return;
+            }
 
-            await AsyncStorage.setItem("users", JSON.stringify(users));
-            await AsyncStorage.setItem("currentUser", JSON.stringify({ username }));
+            await AsyncStorage.setItem(
+                "currentUser",
+                JSON.stringify({ username })
+            );
 
             nav.reset({
                 index: 0,
                 routes: [{ name: "Home" }],
             });
         } catch (err) {
-            console.log("createAccount error:", err);
+            console.log("signIn error:", err);
             setError("Unexpected error occurred.");
         } finally {
             setLoading(false);
@@ -88,84 +81,66 @@ export default function LoginScreen() {
     const ErrorMessage = () =>
         error ? <Text style={[pageStyles.errorText, isDaytime ? pageStyles.errorDay : pageStyles.errorNight]}>{error}</Text> : null;
 
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <KeyboardAvoidingView
-                style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-            >
+            <View style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}>
                 <View style={[shared.contentContainer, pageStyles.container]}>
-                    <Text style={[pageStyles.title, isDaytime ? pageStyles.textDay : pageStyles.textNight]}>
-                        Create Account
+                    <Text style={[pageStyles.title, isDaytime ? pageStyles.textDay : pageStyles.nightText]}>
+                        Sign In
                     </Text>
-
                     <TextInput
-                        value={username}
-                        onChangeText={setUsername}
+                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
                         placeholder="User Name"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
                         autoCapitalize="none"
-                        autoCorrect={false}
+                        value={username}
+                        onChangeText={setUsername}
                         returnKeyType="next"
                         accessible
                         accessibilityLabel="User Name"
                     />
-
                     <TextInput
-                        value={password}
-                        onChangeText={setPassword}
+                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
                         placeholder="Password"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
                         secureTextEntry
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        returnKeyType="next"
+                        value={password}
+                        onChangeText={setPassword}
+                        returnKeyType="done"
                         accessible
                         accessibilityLabel="Password"
                     />
-
-                    <TextInput
-                        value={confirm}
-                        onChangeText={setConfirm}
-                        placeholder="Confirm Password"
-                        placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
-                        secureTextEntry
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        returnKeyType="done"
-                        accessible
-                        accessibilityLabel="Confirm Password"
-                    />
-
                     <ErrorMessage />
-
-                    <AppButton
-                        title={loading ? "Creating…" : "Create Account"}
-                        onPress={createAccount}
-                        style={[pageStyles.createBtn]}
-                        disabled={loading}
-                    />
-
-                    <View style={pageStyles.row}>
-                        <Text style={[pageStyles.smallText, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
-                            Already have an account?
-                        </Text>
+                    {loading ? (
+                        <ActivityIndicator
+                            size="large"
+                            color={isDaytime ? pageStyles.textDay.color : pageStyles.nightText.color}
+                            style={{ marginVertical: 10 }}
+                        />
+                    ) : (
                         <AppButton
                             title="Sign In"
-                            onPress={() => nav.navigate("Signin")}
-                            style={[pageStyles.smallBtn]}
+                            onPress={signIn}
+                            style={pageStyles.primaryBtn}
+                        />
+                    )}
+                    <View style={pageStyles.row}>
+                        <Text style={[pageStyles.smallText, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
+                            Don't have an account?
+                        </Text>
+                        <AppButton
+                            title="Create Account"
+                            onPress={() => nav.navigate("Login")}
+                            style={pageStyles.smallBtn}
                             textStyle={pageStyles.smallBtnText}
                         />
                     </View>
-
                     <Text style={[pageStyles.securityNote, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
                         Note: This demo stores credentials locally for testing only. For production use secure storage and server-side authentication.
                     </Text>
                 </View>
-            </KeyboardAvoidingView>
+            </View>
         </TouchableWithoutFeedback>
     );
 }
@@ -197,24 +172,21 @@ const pageStyles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         color: "#022F40",
     },
-
     inputNight: {
         backgroundColor: "#142533",
         color: "#FFFFFF",
     },
-
-    createBtn: {
+    primaryBtn: {
         marginTop: 6,
         paddingVertical: 14,
         borderRadius: 12,
         backgroundColor: "#8A2BE2",
     },
-
     row: {
         marginTop: 14,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between",
+        justifyContent: "space-between", 
     },
 
     smallText: {
@@ -233,14 +205,11 @@ const pageStyles = StyleSheet.create({
         fontWeight: "700",
     },
 
-    playlistMeta: {
-        fontSize: 12,
-    },
-
     securityNote: {
         marginTop: 18,
         fontSize: 12,
         opacity: 0.8,
+        textAlign: 'center',
     },
 
     errorText: {
@@ -261,7 +230,7 @@ const pageStyles = StyleSheet.create({
     textDay: {
         color: "#022F40",
     },
-    textNight: {
+    nightText: {
         color: "#FFFFFF",
     },
 

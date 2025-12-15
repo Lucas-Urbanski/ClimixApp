@@ -1,7 +1,6 @@
-import React from "react";
 import { Pressable, Text, StyleSheet } from "react-native";
 
-export default function AppButton({ title, onPress, style }) {
+export default function AppButton({ title, onPress, style, textStyle }) {
   return (
     <Pressable
       onPress={onPress}
@@ -11,7 +10,7 @@ export default function AppButton({ title, onPress, style }) {
         style
       ]}
     >
-      <Text style={styles.text}>{title}</Text>
+      <Text style={[styles.text, textStyle]}>{title}</Text>
     </Pressable>
   );
 }

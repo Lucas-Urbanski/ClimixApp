@@ -6,13 +6,18 @@ import {
     PermissionsAndroid,
     StyleSheet,
 } from "react-native";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Geolocation from "react-native-geolocation-service";
 import AppButton from "../components/appButton.jsx";
+import createDayNightStyles from "../assets/styles/dayNightStyles";
+import useDayNight from "../components/useDayNight";
 
 export default function HomeScreen() {
     const nav = useNavigation();
+
+    const { isDaytime } = useDayNight();
+    const shared = createDayNightStyles(isDaytime);
 
     const key = "cd074d1d61f925210d6b697e73298d83";
 
@@ -20,7 +25,7 @@ export default function HomeScreen() {
     const [loading, setLoading] = useState(true);
     const [selectedMood, setSelectedMood] = useState(null);
 
-    // Mood options with values
+    // mood options
     const moodOptions = [
         { id: "happy", label: "😊 Happy" },
         { id: "calm", label: "😌 Calm" },
@@ -29,6 +34,11 @@ export default function HomeScreen() {
         { id: "romantic", label: "💘 Romantic" },
     ];
 
+    useEffect(() => {
+        loadWeather();
+    }, []);
+
+    /* LOCATION HELPERS */
     async function getGPSPermission() {
         try {
             if (Platform.OS === "android") {
@@ -40,7 +50,6 @@ export default function HomeScreen() {
                         buttonPositive: "OK",
                     }
                 );
-
                 return granted === PermissionsAndroid.RESULTS.GRANTED;
             }
             return true;
@@ -52,25 +61,17 @@ export default function HomeScreen() {
 
     async function getLocation() {
         const hasPermission = await getGPSPermission();
-        if (!hasPermission) {
-            console.log("GPS permission denied.");
-            return null;
-        }
+        if (!hasPermission) return null;
 
         return new Promise((resolve, reject) => {
             Geolocation.getCurrentPosition(
                 (pos) => {
-                    const coords = {
+                    resolve({
                         lat: pos.coords.latitude,
                         lon: pos.coords.longitude,
-                    };
-                    console.log("GPS location:", coords);
-                    resolve(coords);
+                    });
                 },
-                (err) => {
-                    console.log("GPS error:", err);
-                    reject(err);
-                },
+                reject,
                 { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
             );
         });
@@ -83,64 +84,43 @@ export default function HomeScreen() {
     const cacheKeyFor = (lat, lon, date) =>
         `weather_${date}_${lat.toFixed(3)}_${lon.toFixed(3)}`;
 
-
-    useEffect(() => {
-        loadWeather();
-    }, []);
-
-
+    /* WEATHER LOADING */
     async function loadWeather() {
         try {
             setLoading(true);
-
             const today = getTodayISO();
 
             const loc = await getLocation();
             if (!loc) {
-                console.log("No GPS available.");
                 setLoading(false);
                 return;
             }
 
             const { lat, lon } = loc;
-
             const cacheKey = cacheKeyFor(lat, lon, today);
             const saved = await AsyncStorage.getItem(cacheKey);
 
             if (saved) {
                 const parsed = JSON.parse(saved);
-                if (parsed.date === today) {
-                    console.log("Loaded from cache:", parsed.data);
+                if (parsed.date === today && parsed.data) {
                     setWeather(parsed.data);
                     setLoading(false);
                     return;
                 }
             }
 
-            await fetchWeather({ lat, lon, today });
+            await fetchWeather({ lat, lon, today, cacheKey });
         } catch (err) {
             console.log("loadWeather error:", err);
             setLoading(false);
         }
     }
 
-
-
-    async function fetchWeather({ lat, lon, today }) {
-        setLoading(true);
-
-        const cacheKey = cacheKeyFor(lat, lon, today);
-
+    async function fetchWeather({ lat, lon, today, cacheKey }) {
         try {
-            console.log("Fetching weather for:", lat, lon);
-
             const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${key}`;
-
             const res = await fetch(url);
-            if (!res.ok) {
-                console.log("Weather API error:", res.status);
-                return;
-            }
+            if (!res.ok) return;
 
             const json = await res.json();
 
@@ -152,10 +132,7 @@ export default function HomeScreen() {
 
             await AsyncStorage.setItem(
                 cacheKey,
-                JSON.stringify({
-                    date: today,
-                    data,
-                })
+                JSON.stringify({ date: today, data })
             );
 
             setWeather(data);
@@ -166,6 +143,7 @@ export default function HomeScreen() {
         }
     }
 
+    /* UI HELPERS */
     function weatherEmoji(main) {
         if (!main) return "";
         const m = main.toLowerCase();
@@ -180,70 +158,95 @@ export default function HomeScreen() {
         return "🌤️";
     }
 
-    return (
-        <View style={styles.container}>
-            {/* WEATHER */}
-            {loading ? (
-                <Text style={styles.weatherText}>Loading weather...</Text>
-            ) : weather ? (
-                <>
-                    <Text style={styles.temp}>{Math.round(weather.temp)}°C</Text>
-                    <Text style={styles.weatherText}>
-                        {weather.main} {weatherEmoji(weather.main)}
-                    </Text>
-                </>
-            ) : (
-                <Text style={styles.weatherText}>Weather unavailable</Text>
-            )}
+    const formatNav = (emoji, label) => `${emoji}\n${label}`;
 
-            {/* MOOD SELECTION */}
-            <Text style={styles.moodLabel}>Select Your Mood:</Text>
-            <View style={styles.moodContainer}>
-                {moodOptions.map((mood) => (
-                    <AppButton
-                        key={mood.id}
-                        title={mood.label}
-                        style={[
-                            styles.moodButton,
-                            selectedMood === mood.id && styles.selectedMoodButton
-                        ]}
-                        onPress={() => setSelectedMood(mood.id)}
-                    />
-                ))}
+    const accent = "#8A2BE2";
+    const moodBtnBg = isDaytime ? "#f0f0f0" : "#2b3a4a";
+    const moodBtnText = isDaytime ? "#022F40" : "#FFFFFF";
+
+    return (
+        <View style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}>
+            <View style={[shared.contentContainer, pageStyles.contentContainer]}>
+                {/* WEATHER */}
+                {loading ? (
+                    <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                        Loading weather...
+                    </Text>
+                ) : weather ? (
+                    <>
+                        <Text style={[pageStyles.temp, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
+                            {Math.round(weather.temp)}°C
+                        </Text>
+                        <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                            {weather.main} {weatherEmoji(weather.main)}
+                        </Text>
+                    </>
+                ) : (
+                    <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                        Weather unavailable
+                    </Text>
+                )}
+
+                {/* MOOD */}
+                <Text style={[pageStyles.moodLabel, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
+                    Select Your Mood:
+                </Text>
+
+                <View style={pageStyles.moodContainer}>
+                    {moodOptions.map((mood) => (
+                        <AppButton
+                            key={mood.id}
+                            title={mood.label}
+                            style={[
+                                pageStyles.moodButton,
+                                { backgroundColor: moodBtnBg, width: "48%" },
+                                selectedMood === mood.id && { backgroundColor: accent },
+                            ]}
+                            textStyle={{
+                                color: selectedMood === mood.id ? "#FFFFFF" : moodBtnText,
+                            }}
+                            onPress={() => setSelectedMood(mood.id)}
+                        />
+                    ))}
+                </View>
+
+                {selectedMood && (
+                    <Text style={[pageStyles.selectedMoodText, { color: accent }]}>
+                        Selected Mood: {moodOptions.find(m => m.id === selectedMood)?.label}
+                    </Text>
+                )}
+
+                <AppButton
+                    title="🎶 Generate Playlist"
+                    onPress={() =>
+                        nav.navigate("Playlist", {
+                            weatherCondition: weather?.main,
+                            temperature: weather?.temp,
+                            mood: selectedMood || "auto",
+                        })
+                    }
+                    style={[pageStyles.generateBtn, { backgroundColor: accent }]}
+                />
             </View>
 
-            {/* Display selected mood */}
-            {selectedMood && (
-                <Text style={styles.selectedMoodText}>
-                    Selected Mood: {moodOptions.find(m => m.id === selectedMood)?.label}
-                </Text>
-            )}
-
-            <AppButton
-                title="🎶 Generate Playlist"
-                onPress={() => nav.navigate("Playlist", { 
-                    weatherCondition: weather?.main,
-                    temperature: weather?.temp,
-                    mood: selectedMood || "auto"
-                })}
-                style={styles.generateBtn}
-            />
-
-            {/* Nav */}
-            <View style={styles.navRow}>
+            {/* NAV */}
+            <View style={[shared.navRow, isDaytime ? shared.navRowDay : shared.navRowNight]}>
                 <AppButton
-                    title="🎵 Playlist"
-                    style={styles.navBtn}
+                    title={formatNav("🎵", "Playlist")}
+                    style={shared.navBtnBase}
+                    textStyle={shared.navTextInactive}
                     onPress={() => nav.navigate("Playlist")}
                 />
                 <AppButton
-                    title="🏠 Home"
-                    style={styles.navBtn}
+                    title={formatNav("🏠", "Home")}
+                    style={shared.navBtnBase}
+                    textStyle={shared.navTextActive}
                     onPress={() => nav.navigate("Home")}
                 />
                 <AppButton
-                    title="⚙️ Profile"
-                    style={styles.navBtn}
+                    title={formatNav("⚙️", "Profile")}
+                    style={shared.navBtnBase}
+                    textStyle={shared.navTextInactive}
                     onPress={() => nav.navigate("Profile")}
                 />
             </View>
@@ -251,15 +254,14 @@ export default function HomeScreen() {
     );
 }
 
-const styles = StyleSheet.create({
-    container: {
-        padding: 20,
+const pageStyles = StyleSheet.create({
+    contentContainer: {
         flex: 1,
+        padding: 20,
     },
     temp: {
         fontSize: 42,
         fontWeight: "bold",
-        marginBottom: 5,
         textAlign: "center",
     },
     weatherText: {
@@ -267,9 +269,12 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 30,
     },
+    weatherTextDay: { color: "#0B4660" },
+    weatherTextNight: { color: "#DCDFF8" },
+
     moodLabel: {
         fontSize: 18,
-        fontWeight: "bold",
+        fontWeight: "700",
         marginTop: 20,
         marginBottom: 10,
     },
@@ -277,33 +282,21 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
-        marginBottom: 15,
     },
     moodButton: {
-        backgroundColor: "#f0f0f0",
         marginBottom: 10,
-        width: "48%",
-    },
-    selectedMoodButton: {
-        backgroundColor: "#8A2BE2",
+        paddingVertical: 12,
+        borderRadius: 12,
     },
     selectedMoodText: {
         fontSize: 16,
         textAlign: "center",
         marginBottom: 15,
-        color: "#8A2BE2",
         fontWeight: "bold",
     },
     generateBtn: {
-        backgroundColor: "#8A2BE2",
         marginTop: 10,
-    },
-    navRow: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        marginTop: 40,
-    },
-    navBtn: {
-        paddingVertical: 20,
+        paddingVertical: 14,
+        borderRadius: 12,
     },
 });
