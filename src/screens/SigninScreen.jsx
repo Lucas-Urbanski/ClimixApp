@@ -79,18 +79,18 @@ export default function SigninScreen() {
     }
 
     const ErrorMessage = () =>
-        error ? <Text style={[pageStyles.errorText, isDaytime ? pageStyles.errorDay : pageStyles.errorNight]}>{error}</Text> : null;
+        error ? <Text style={[styles.errorText, isDaytime ? styles.errorDay : styles.errorNight]}>{error}</Text> : null;
 
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <View style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}>
-                <View style={[shared.contentContainer, pageStyles.container]}>
-                    <Text style={[pageStyles.title, isDaytime ? pageStyles.textDay : pageStyles.nightText]}>
+                <View style={[shared.contentContainer, styles.container]}>
+                    <Text style={[styles.title, isDaytime ? styles.textDay : styles.nightText]}>
                         Sign In
                     </Text>
                     <TextInput
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
+                        style={[styles.input, isDaytime ? styles.inputDay : styles.inputNight]}
                         placeholder="User Name"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
                         autoCapitalize="none"
@@ -101,7 +101,7 @@ export default function SigninScreen() {
                         accessibilityLabel="User Name"
                     />
                     <TextInput
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
+                        style={[styles.input, isDaytime ? styles.inputDay : styles.inputNight]}
                         placeholder="Password"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
                         secureTextEntry
@@ -115,28 +115,28 @@ export default function SigninScreen() {
                     {loading ? (
                         <ActivityIndicator
                             size="large"
-                            color={isDaytime ? pageStyles.textDay.color : pageStyles.nightText.color}
+                            color={isDaytime ? styles.textDay.color : styles.nightText.color}
                             style={{ marginVertical: 10 }}
                         />
                     ) : (
                         <AppButton
                             title="Sign In"
                             onPress={signIn}
-                            style={pageStyles.primaryBtn}
+                            style={styles.primaryBtn}
                         />
                     )}
-                    <View style={pageStyles.row}>
-                        <Text style={[pageStyles.smallText, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
+                    <View style={styles.row}>
+                        <Text style={[styles.smallText, isDaytime ? styles.subTextDay : styles.subTextNight]}>
                             Don't have an account?
                         </Text>
                         <AppButton
                             title="Create Account"
                             onPress={() => nav.navigate("Login")}
-                            style={pageStyles.smallBtn}
-                            textStyle={pageStyles.smallBtnText}
+                            style={styles.smallBtn}
+                            textStyle={styles.smallBtnText}
                         />
                     </View>
-                    <Text style={[pageStyles.securityNote, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
+                    <Text style={[styles.securityNote, isDaytime ? styles.subTextDay : styles.subTextNight]}>
                         Note: This demo stores credentials locally for testing only. For production use secure storage and server-side authentication.
                     </Text>
                 </View>
@@ -145,7 +145,7 @@ export default function SigninScreen() {
     );
 }
 
-const pageStyles = StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
@@ -186,7 +186,7 @@ const pageStyles = StyleSheet.create({
         marginTop: 14,
         flexDirection: "row",
         alignItems: "center",
-        justifyContent: "space-between", 
+        justifyContent: "space-between",
     },
 
     smallText: {

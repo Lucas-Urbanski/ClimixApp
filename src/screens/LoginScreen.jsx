@@ -86,7 +86,7 @@ export default function LoginScreen() {
     }
 
     const ErrorMessage = () =>
-        error ? <Text style={[pageStyles.errorText, isDaytime ? pageStyles.errorDay : pageStyles.errorNight]}>{error}</Text> : null;
+        error ? <Text style={[styles.errorText, isDaytime ? styles.errorDay : styles.errorNight]}>{error}</Text> : null;
 
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -94,8 +94,8 @@ export default function LoginScreen() {
                 style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
             >
-                <View style={[shared.contentContainer, pageStyles.container]}>
-                    <Text style={[pageStyles.title, isDaytime ? pageStyles.textDay : pageStyles.textNight]}>
+                <View style={[shared.contentContainer, styles.container]}>
+                    <Text style={[styles.title, isDaytime ? styles.textDay : styles.textNight]}>
                         Create Account
                     </Text>
 
@@ -104,7 +104,7 @@ export default function LoginScreen() {
                         onChangeText={setUsername}
                         placeholder="User Name"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
+                        style={[styles.input, isDaytime ? styles.inputDay : styles.inputNight]}
                         autoCapitalize="none"
                         autoCorrect={false}
                         returnKeyType="next"
@@ -118,7 +118,7 @@ export default function LoginScreen() {
                         placeholder="Password"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
                         secureTextEntry
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
+                        style={[styles.input, isDaytime ? styles.inputDay : styles.inputNight]}
                         autoCapitalize="none"
                         autoCorrect={false}
                         returnKeyType="next"
@@ -132,7 +132,7 @@ export default function LoginScreen() {
                         placeholder="Confirm Password"
                         placeholderTextColor={isDaytime ? "#6b7990" : "#aab8d9"}
                         secureTextEntry
-                        style={[pageStyles.input, isDaytime ? pageStyles.inputDay : pageStyles.inputNight]}
+                        style={[styles.input, isDaytime ? styles.inputDay : styles.inputNight]}
                         autoCapitalize="none"
                         autoCorrect={false}
                         returnKeyType="done"
@@ -145,23 +145,23 @@ export default function LoginScreen() {
                     <AppButton
                         title={loading ? "Creating…" : "Create Account"}
                         onPress={createAccount}
-                        style={[pageStyles.createBtn]}
+                        style={[styles.createBtn]}
                         disabled={loading}
                     />
 
-                    <View style={pageStyles.row}>
-                        <Text style={[pageStyles.smallText, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
+                    <View style={styles.row}>
+                        <Text style={[styles.smallText, isDaytime ? styles.subTextDay : styles.subTextNight]}>
                             Already have an account?
                         </Text>
                         <AppButton
                             title="Sign In"
                             onPress={() => nav.navigate("Signin")}
-                            style={[pageStyles.smallBtn]}
-                            textStyle={pageStyles.smallBtnText}
+                            style={[styles.smallBtn]}
+                            textStyle={styles.smallBtnText}
                         />
                     </View>
 
-                    <Text style={[pageStyles.securityNote, isDaytime ? pageStyles.subTextDay : pageStyles.subTextNight]}>
+                    <Text style={[styles.securityNote, isDaytime ? styles.subTextDay : styles.subTextNight]}>
                         Note: This demo stores credentials locally for testing only. For production use secure storage and server-side authentication.
                     </Text>
                 </View>
@@ -170,7 +170,7 @@ export default function LoginScreen() {
     );
 }
 
-const pageStyles = StyleSheet.create({
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,

@@ -166,39 +166,39 @@ export default function HomeScreen() {
 
     return (
         <View style={[shared.fullContainer, isDaytime ? shared.dayBackground : shared.nightBackground]}>
-            <View style={[shared.contentContainer, pageStyles.contentContainer]}>
+            <View style={[shared.contentContainer, styles.contentContainer]}>
                 {/* WEATHER */}
                 {loading ? (
-                    <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                    <Text style={[styles.weatherText, isDaytime ? styles.weatherTextDay : styles.weatherTextNight]}>
                         Loading weather...
                     </Text>
                 ) : weather ? (
                     <>
-                        <Text style={[pageStyles.temp, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
+                        <Text style={[styles.temp, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
                             {Math.round(weather.temp)}°C
                         </Text>
-                        <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                        <Text style={[styles.weatherText, isDaytime ? styles.weatherTextDay : styles.weatherTextNight]}>
                             {weather.main} {weatherEmoji(weather.main)}
                         </Text>
                     </>
                 ) : (
-                    <Text style={[pageStyles.weatherText, isDaytime ? pageStyles.weatherTextDay : pageStyles.weatherTextNight]}>
+                    <Text style={[styles.weatherText, isDaytime ? styles.weatherTextDay : styles.weatherTextNight]}>
                         Weather unavailable
                     </Text>
                 )}
 
                 {/* MOOD */}
-                <Text style={[pageStyles.moodLabel, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
+                <Text style={[styles.moodLabel, { color: isDaytime ? "#022F40" : "#FFFFFF" }]}>
                     Select Your Mood:
                 </Text>
 
-                <View style={pageStyles.moodContainer}>
+                <View style={styles.moodContainer}>
                     {moodOptions.map((mood) => (
                         <AppButton
                             key={mood.id}
                             title={mood.label}
                             style={[
-                                pageStyles.moodButton,
+                                styles.moodButton,
                                 { backgroundColor: moodBtnBg, width: "48%" },
                                 selectedMood === mood.id && { backgroundColor: accent },
                             ]}
@@ -211,7 +211,7 @@ export default function HomeScreen() {
                 </View>
 
                 {selectedMood && (
-                    <Text style={[pageStyles.selectedMoodText, { color: accent }]}>
+                    <Text style={[styles.selectedMoodText, { color: accent }]}>
                         Selected Mood: {moodOptions.find(m => m.id === selectedMood)?.label}
                     </Text>
                 )}
@@ -225,7 +225,7 @@ export default function HomeScreen() {
                             mood: selectedMood || "auto",
                         })
                     }
-                    style={[pageStyles.generateBtn, { backgroundColor: accent }]}
+                    style={[styles.generateBtn, { backgroundColor: accent }]}
                 />
             </View>
 
@@ -254,21 +254,24 @@ export default function HomeScreen() {
     );
 }
 
-const pageStyles = StyleSheet.create({
+const styles = StyleSheet.create({
     contentContainer: {
         flex: 1,
         padding: 20,
     },
+
     temp: {
         fontSize: 42,
         fontWeight: "bold",
         textAlign: "center",
     },
+
     weatherText: {
         fontSize: 20,
         textAlign: "center",
         marginBottom: 30,
     },
+
     weatherTextDay: { color: "#0B4660" },
     weatherTextNight: { color: "#DCDFF8" },
 
@@ -278,22 +281,26 @@ const pageStyles = StyleSheet.create({
         marginTop: 20,
         marginBottom: 10,
     },
+
     moodContainer: {
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "space-between",
     },
+
     moodButton: {
         marginBottom: 10,
         paddingVertical: 12,
         borderRadius: 12,
     },
+
     selectedMoodText: {
         fontSize: 16,
         textAlign: "center",
         marginBottom: 15,
         fontWeight: "bold",
     },
+
     generateBtn: {
         marginTop: 10,
         paddingVertical: 14,
