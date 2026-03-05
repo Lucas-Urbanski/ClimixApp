@@ -6,6 +6,7 @@ import {
     PermissionsAndroid,
     StyleSheet,
 } from "react-native";
+import { API_KEY } from "@env";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Geolocation from "react-native-geolocation-service";
@@ -19,7 +20,7 @@ export default function HomeScreen() {
     const { isDaytime } = useDayNight();
     const shared = createDayNightStyles(isDaytime);
 
-    const key = "cd074d1d61f925210d6b697e73298d83";
+    const key = API_KEY;
 
     const [weather, setWeather] = useState(null);
     const [loading, setLoading] = useState(true);
