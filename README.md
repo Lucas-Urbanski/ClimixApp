@@ -1,20 +1,27 @@
-**Climix - Technical Deep Dive**
+**Climix**
 
 Climix is a React Native mobile application that generates music playlists based on real-time weather conditions. By analyzing weather data and mapping it to musical attributes, the app creates playlists that match the user’s environment and mood.
 
-**Security & Data Persistence**
+**Features**
+- Weather-based playlist generation
+- Real-time weather data retrieval
+- Dynamic UI theme based on time of day
+- Persistent user preferences
+- Secure credential hashing
+- Smooth screen navigation
 
-Sensitive user credentials are secured using SHA-256 hashing via the CryptoJS library.
-User data is converted into hex-encoded hashes, ensuring that plain-text credentials are never stored on the device.
+**Tech Stack**
 
-Local Data Storage
+Frontend
+- React Native
+- React Navigation
 
-This enables the app to:
-- Store login sessions
-- Save user preferences
-- Maintain state across app restarts
+APIs
+- Weather API
+- Spotify API
 
-All data is stored locally on the device, allowing the application to function without requiring a continuous backend connection.
+Security
+- AsyncStorage
 
 **Dynamic Frontend**
 
@@ -50,19 +57,40 @@ For example:
 - Rainy |	Chill Lo-Fi
 - Sunny |	Upbeat Pop
 - Windy	| Indie Alternative
-
-**Tech Stack**
-
-Frontend
-- React Native
-- React Navigation
-
-APIs
-- Weather API
-- Spotify API
-
-Security
 - CryptoJS (SHA-256 hashing)
 
-Storage
-- AsyncStorage
+**Security & Data Persistence**
+
+Sensitive user credentials are secured using SHA-256 hashing via the CryptoJS library.
+User data is converted into hex-encoded hashes, ensuring that plain-text credentials are never stored on the device.
+
+Local Data Storage
+
+This enables the app to:
+- Store login sessions
+- Save user preferences
+- Maintain state across app restarts
+
+All data is stored locally on the device, allowing the application to function without requiring a continuous backend connection.
+
+Running the Project
+1. Clone the repository
+- git clone https://github.com/yourusername/climix
+2. Install dependencies
+- npm install
+3. Run the application
+- npx expo start
+
+**Engineering Concepts Demonstrated**
+- Mobile application development
+- REST API integration
+- Asynchronous programming
+- Context-aware UI rendering
+- Secure credential hashing
+- Client-side state persistence
+
+**Author**
+
+Lucas Urbanski
+
+Software Developer
